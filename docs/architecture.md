@@ -19,3 +19,7 @@ src/
 All user-owned tables use `user_id` indexes and RLS restricted to `auth.uid() = user_id`; child task rows validate parent ownership. Service-role access remains server-only. Phase 2 implements only `profiles`, created by an `auth.users` trigger. Its RLS allows an authenticated user to select or update only the row whose primary key equals `auth.uid()`; it intentionally has no client insert policy.
 
 Deadlines are `timestamptz`; profiles supply the display timezone. Completing exactly at a deadline is allowed. Consequences are not queried for normal task cards. Expenses default to the server-derived current day and suggestions always require confirmation. Score calculation is a versioned, explainable domain function.
+
+## Phase 2 authentication boundary
+
+`@supabase/ssr` provides separate browser and server clients. The Next.js proxy refreshes session cookies, while application pages authorize with verified claims rather than trusting `getSession()`. Sign-in, sign-up, sign-out, and confirmation exchange run server-side. The `profiles` migration must be applied to the Supabase project before profile reads and automatic creation are active.
