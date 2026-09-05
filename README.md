@@ -8,7 +8,7 @@ The repository contains the Next.js 16 / TypeScript / Tailwind foundation, the f
 
 ## Local development
 
-1. Copy `.env.example` to `.env.local` and enter Supabase public keys when the project is provisioned.
+1. Copy `.env.example` to `.env.local` and enter `NEXT_PUBLIC_SUPABASE_URL` plus the Supabase publishable key when the project is provisioned.
 2. Run `npm install`.
 3. Run `npm run dev`, then open `http://localhost:3000`.
 
