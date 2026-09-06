@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateCommitmentAction } from "@/features/commitments/actions";
+import { completeCommitmentAction, updateCommitmentAction } from "@/features/commitments/actions";
 import type { CommitmentView } from "@/features/commitments/types";
 
 type Props = { commitments: CommitmentView[]; deadlineLabels: Record<string, string>; deadlineInputs: Record<string, string> };
@@ -38,5 +38,13 @@ function CommitmentCard({ commitment, deadlineLabel, deadlineInput }: { commitme
       router.refresh();
     });
   }
-  return <article className={`commitment-card pact-card commitment-${commitment.effectiveStatus}`}><div><h2>{commitment.title}</h2>{commitment.description ? <p>{commitment.description}</p> : null}</div><div className="commitment-meta"><span>{commitment.priority} priority</span><time dateTime={commitment.deadline_at}>{deadlineLabel}</time></div>{commitment.effectiveStatus === "active" ? <button className="text-button" onClick={() => setEditing((value) => !value)} type="button">{editing ? "Cancel edit" : "Edit"}</button> : null}{editing ? <form action={submit} className="commitment-edit"><label className="field"><span>Title</span><input name="title" required defaultValue={commitment.title} maxLength={160} /></label><label className="field"><span>Deadline</span><input name="deadline" type="datetime-local" required defaultValue={deadlineInput} /></label><label className="field"><span>Priority</span><select name="priority" defaultValue={commitment.priority}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="field"><span>Notes</span><textarea name="description" defaultValue={commitment.description ?? ""} maxLength={2000} rows={2} /></label><label className="field"><span>Replace consequence <small>optional; existing text remains private</small></span><textarea name="newConsequence" maxLength={500} rows={2} /></label>{error ? <p className="field-error" role="alert">{error}</p> : null}<button className="button-secondary" type="submit" disabled={isPending}>{isPending ? "Saving…" : "Save changes"}</button></form> : null}{commitment.effectiveStatus === "missed" && commitment.consequence ? <p className="commitment-consequence"><strong>Consequence</strong>{commitment.consequence}</p> : null}</article>;
+  function complete() {
+    setError(undefined);
+    startTransition(async () => {
+      const result = await completeCommitmentAction(commitment.id);
+      if (result.error) return setError(result.error);
+      router.refresh();
+    });
+  }
+  return <article className={`commitment-card pact-card commitment-${commitment.effectiveStatus}`}><div><h2>{commitment.title}</h2>{commitment.description ? <p>{commitment.description}</p> : null}</div><div className="commitment-meta"><span>{commitment.priority} priority</span><time dateTime={commitment.deadline_at}>{deadlineLabel}</time></div>{commitment.effectiveStatus === "active" ? <div className="commitment-actions"><button className="text-button" onClick={() => setEditing((value) => !value)} type="button">{editing ? "Cancel edit" : "Edit"}</button><button className="button-secondary commitment-complete" onClick={complete} type="button" disabled={isPending}>{isPending ? "Saving…" : "Mark complete"}</button></div> : null}{editing ? <form action={submit} className="commitment-edit"><label className="field"><span>Title</span><input name="title" required defaultValue={commitment.title} maxLength={160} /></label><label className="field"><span>Deadline</span><input name="deadline" type="datetime-local" required defaultValue={deadlineInput} /></label><label className="field"><span>Priority</span><select name="priority" defaultValue={commitment.priority}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="field"><span>Notes</span><textarea name="description" defaultValue={commitment.description ?? ""} maxLength={2000} rows={2} /></label><label className="field"><span>Replace consequence <small>optional; existing text remains private</small></span><textarea name="newConsequence" maxLength={500} rows={2} /></label>{error ? <p className="field-error" role="alert">{error}</p> : null}<button className="button-secondary" type="submit" disabled={isPending}>{isPending ? "Saving…" : "Save changes"}</button></form> : null}{error && !editing ? <p className="field-error" role="alert">{error}</p> : null}{commitment.effectiveStatus === "missed" && commitment.consequence ? <p className="commitment-consequence"><strong>Consequence</strong>{commitment.consequence}</p> : null}</article>;
 }
