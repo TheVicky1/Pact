@@ -1,5 +1,6 @@
 import { EmptyState } from "@/components/pact/empty-state";
+import { CreateCommitmentForm } from "@/features/commitments/ui/create-commitment-form";
 
 export default function CommitmentsPage() {
-  return <main className="secondary-page"><header className="page-heading"><p className="eyebrow">COMMITMENTS</p><h1>Promises, held<br />with care.</h1><p>Your first commitment will appear here once the creation flow is ready. Nothing is being counted before it exists.</p></header><EmptyState label="YOUR LIST" title="No commitments yet." description="PACT will show only commitments you intentionally create, along with their deadline and progress." /></main>;
+  return <main className="commitments-page"><header className="page-heading"><p className="eyebrow">COMMITMENTS</p><h1>Promises, held<br />with care.</h1><p>Create a clear promise and give it a meaningful deadline. Consequences stay private unless a deadline is missed.</p></header><div className="commitments-layout"><CreateCommitmentForm /><EmptyState label="YOUR LIST" title="No commitments yet." description="Your active, completed, and missed commitments will appear here." /></div></main>;
 }
