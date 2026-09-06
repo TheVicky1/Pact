@@ -1,2 +1,3 @@
 import Link from "next/link";
-export function PactBrand({ compact = false }: { compact?: boolean }) { return <Link className="pact-brand" href="/app" aria-label="PACT dashboard"><span className="pact-brand-mark" aria-hidden="true" /><span className={compact ? "sr-only" : "pact-brand-name"}>PACT</span></Link>; }
+import Image from "next/image";
+export function PactBrand({ compact = false, href = "/app" }: { compact?: boolean; href?: string }) { return <Link className="pact-brand" href={href} aria-label="PACT dashboard"><Image className="pact-brand-mark" src="/pact-mark.png" alt="" width={28} height={28} priority /><span className={compact ? "sr-only" : "pact-brand-name"}>PACT</span></Link>; }
