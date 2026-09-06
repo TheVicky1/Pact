@@ -13,12 +13,11 @@ export type CommitmentRecord = {
   priority: CommitmentPriority;
   status: CommitmentStatus;
   completed_at: string | null;
-  consequence: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type CommitmentView = Omit<CommitmentRecord, "user_id" | "consequence"> & {
+export type CommitmentView = Omit<CommitmentRecord, "user_id"> & {
   effectiveStatus: CommitmentStatus;
   consequence?: string;
 };

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { commitmentPriorities } from "@/features/commitments/types";
+import { commitmentPriorities } from "./types.ts";
 
 const localDeadline = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Choose a valid deadline.").refine((value) => {
   const [date, time] = value.split("T");

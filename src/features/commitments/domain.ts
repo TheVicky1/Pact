@@ -10,7 +10,7 @@ export function getEffectiveCommitmentStatus(commitment: Pick<CommitmentRecord, 
   return new Date(commitment.deadline_at).getTime() < now.getTime() ? "missed" : "active";
 }
 
-export function toCommitmentView(commitment: CommitmentRecord, now = new Date()): CommitmentView {
+export function toCommitmentView(commitment: CommitmentRecord, now = new Date(), consequence?: string | null): CommitmentView {
   const effectiveStatus = getEffectiveCommitmentStatus(commitment, now);
   const safeCommitment = {
     id: commitment.id,
@@ -26,7 +26,7 @@ export function toCommitmentView(commitment: CommitmentRecord, now = new Date())
   return {
     ...safeCommitment,
     effectiveStatus,
-    ...(effectiveStatus === "missed" && commitment.consequence ? { consequence: commitment.consequence } : {}),
+    ...(effectiveStatus === "missed" && consequence ? { consequence } : {}),
   };
 }
 

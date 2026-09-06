@@ -13,7 +13,7 @@ type StoredCommitmentUpdate = Omit<StoredCommitmentInput, "consequence"> & {
   consequence?: string | null;
 };
 
-const commitmentColumns = "id,user_id,title,description,deadline_at,priority,status,completed_at,consequence,created_at,updated_at";
+const commitmentColumns = "id,user_id,title,description,deadline_at,priority,status,completed_at,created_at,updated_at";
 
 export class CommitmentAccessError extends Error {}
 export class CommitmentNotFoundError extends CommitmentAccessError {}
@@ -31,7 +31,18 @@ export async function listCommitments(supabase: SupabaseClient, userId: string, 
     .order("deadline_at", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) throw databaseError("Unable to load commitments right now.");
-  return ((data ?? []) as CommitmentRecord[]).map((commitment) => toCommitmentView(commitment, now));
+  const commitments = (data ?? []) as CommitmentRecord[];
+  return Promise.all(commitments.map(async (commitment) => {
+    const effectiveStatus = canCompleteCommitment(commitment, now) ? "active" : commitment.status === "active" ? "missed" : commitment.status;
+    const consequence = effectiveStatus === "missed" ? await getRevealedConsequence(supabase, commitment.id) : undefined;
+    return toCommitmentView(commitment, now, consequence);
+  }));
+}
+
+async function getRevealedConsequence(supabase: SupabaseClient, id: string) {
+  const { data, error } = await supabase.rpc("get_revealed_commitment_consequence", { p_id: id });
+  if (error) throw databaseError("Unable to load commitments right now.");
+  return typeof data === "string" ? data : null;
 }
 
 export async function getCommitment(supabase: SupabaseClient, userId: string, id: string): Promise<CommitmentRecord> {
@@ -47,58 +58,45 @@ export async function getCommitment(supabase: SupabaseClient, userId: string, id
 }
 
 export async function createCommitment(supabase: SupabaseClient, userId: string, input: StoredCommitmentInput): Promise<CommitmentView> {
-  const { data, error } = await supabase
-    .from("commitments")
-    .insert({
-      title: input.title,
-      description: input.description,
-      priority: input.priority,
-      deadline_at: input.deadlineAt,
-      consequence: input.consequence,
-    })
-    .select(commitmentColumns)
-    .single();
+  const { data, error } = await supabase.rpc("create_commitment", {
+    p_title: input.title,
+    p_description: input.description,
+    p_deadline_at: input.deadlineAt,
+    p_priority: input.priority,
+    p_consequence: input.consequence,
+  });
   if (error) throw databaseError("Unable to create this commitment right now.");
-  const commitment = data as CommitmentRecord;
-  if (commitment.user_id !== userId) throw new CommitmentAccessError("Unable to verify commitment ownership.");
+  if (typeof data !== "string") throw new CommitmentAccessError("Unable to verify commitment ownership.");
+  const commitment = await getCommitment(supabase, userId, data);
   return toCommitmentView(commitment);
 }
 
 export async function updateCommitment(supabase: SupabaseClient, userId: string, id: string, input: StoredCommitmentUpdate): Promise<CommitmentView> {
   const current = await getCommitment(supabase, userId, id);
   if (!canEditCommitment(current)) throw new CommitmentStateError("Only active commitments can be edited.");
-  const { data, error } = await supabase
-    .from("commitments")
-    .update({
-      title: input.title,
-      description: input.description,
-      priority: input.priority,
-      deadline_at: input.deadlineAt,
-      ...(input.consequence !== undefined ? { consequence: input.consequence } : {}),
-    })
-    .eq("id", id)
-    .eq("user_id", userId)
-    .select(commitmentColumns)
-    .maybeSingle();
+  const { error } = await supabase.rpc("update_commitment", {
+    p_id: id,
+    p_title: input.title,
+    p_description: input.description,
+    p_deadline_at: input.deadlineAt,
+    p_priority: input.priority,
+    p_replace_consequence: input.consequence !== undefined,
+    p_consequence: input.consequence ?? null,
+  });
   if (error) throw databaseError("Unable to update this commitment right now.");
-  if (!data) throw new CommitmentNotFoundError("Commitment not found.");
-  return toCommitmentView(data as CommitmentRecord);
+  return toCommitmentView(await getCommitment(supabase, userId, id));
 }
 
 export async function completeCommitment(supabase: SupabaseClient, userId: string, id: string): Promise<CommitmentView> {
   const current = await getCommitment(supabase, userId, id);
   if (current.status === "completed") return toCommitmentView(current);
   if (!canCompleteCommitment(current)) throw new CommitmentStateError("This commitment has already missed its deadline.");
-  const { data, error } = await supabase
-    .from("commitments")
-    .update({ status: "completed" })
-    .eq("id", id)
-    .eq("user_id", userId)
-    .select(commitmentColumns)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("complete_commitment", { p_id: id });
   if (error) throw databaseError("Unable to complete this commitment right now.");
-  if (!data) throw new CommitmentNotFoundError("Commitment not found.");
-  return toCommitmentView(data as CommitmentRecord);
+  if (data === "not_found") throw new CommitmentNotFoundError("Commitment not found.");
+  if (data === "missed") throw new CommitmentStateError("This commitment has already missed its deadline.");
+  if (data !== "completed" && data !== "already_completed") throw databaseError("Unable to complete this commitment right now.");
+  return toCommitmentView(await getCommitment(supabase, userId, id));
 }
 
 export async function listCommitmentHistory(supabase: SupabaseClient, userId: string, now = new Date()): Promise<CommitmentView[]> {
