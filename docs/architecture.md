@@ -27,3 +27,7 @@ Deadlines are `timestamptz`; profiles supply the display timezone. Completing ex
 ## Timezone strategy
 
 `profiles.timezone` stores an IANA timezone and defaults to `Asia/Kolkata`. Server-local time is never used for PACT day boundaries. `src/lib/time/user-time.ts` formats display dates, derives the user's day, turns a local deadline input into a UTC instant, and supplies user-day query ranges. Deadlines remain `timestamptz` in the database.
+
+## Commitments
+
+Phase 3 uses `commitments`, an RLS-protected user-owned table. It preserves the optional consequence alongside the pact but client-facing normal-state views reveal it only after a commitment is classified as missed. `deadline_at` is an instant; presentation and day-range queries use the profile timezone.
