@@ -23,3 +23,7 @@ Deadlines are `timestamptz`; profiles supply the display timezone. Completing ex
 ## Phase 2 authentication boundary
 
 `@supabase/ssr` provides separate browser and server clients. The Next.js proxy refreshes session cookies, while application pages authorize with verified claims rather than trusting `getSession()`. Sign-in, sign-up, sign-out, and confirmation exchange run server-side. The `profiles` migration must be applied to the Supabase project before profile reads and automatic creation are active.
+
+## Timezone strategy
+
+`profiles.timezone` stores an IANA timezone and defaults to `Asia/Kolkata`. Server-local time is never used for PACT day boundaries. `src/lib/time/user-time.ts` formats display dates, derives the user's day, turns a local deadline input into a UTC instant, and supplies user-day query ranges. Deadlines remain `timestamptz` in the database.
