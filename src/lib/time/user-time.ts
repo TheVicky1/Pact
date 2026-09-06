@@ -19,6 +19,10 @@ export function getUserTimeOfDay(timezone: string, now = new Date()) {
   return "night";
 }
 
+export function formatUserDate(timezone: string, now = new Date()) {
+  return new Intl.DateTimeFormat("en-IN", { timeZone: timezone, weekday: "long", month: "long", day: "numeric" }).format(now);
+}
+
 export function formatDeadline(deadline: string | Date, timezone: string) {
   return new Intl.DateTimeFormat("en-IN", { timeZone: timezone, weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(deadline));
 }
@@ -29,7 +33,10 @@ export function isDeadlinePassed(deadline: string | Date, now = new Date()) {
 
 export function getUserDayRange(timezone: string, now = new Date()) {
   const today = getUserToday(timezone, now);
-  return { start: zonedDateTimeToUtc(`${today}T00:00`, timezone), end: zonedDateTimeToUtc(`${today}T23:59:59.999`, timezone) };
+  const start = zonedDateTimeToUtc(`${today}T00:00`, timezone);
+  const nextDay = new Date(`${today}T12:00:00Z`);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  return { start, endExclusive: zonedDateTimeToUtc(`${nextDay.toISOString().slice(0, 10)}T00:00`, timezone) };
 }
 
 // Converts a wall-clock input in an IANA zone to an instant without assuming server timezone.
