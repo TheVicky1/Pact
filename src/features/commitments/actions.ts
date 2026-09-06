@@ -44,9 +44,16 @@ export async function createCommitmentAction(rawInput: unknown): Promise<Commitm
 export async function updateCommitmentAction(id: string, rawInput: unknown): Promise<CommitmentActionResult> {
   try {
     const context = await getCommitmentContext();
-    const parsed = parseInput(rawInput, context.timezone);
+    const input = rawInput && typeof rawInput === "object" ? rawInput as Record<string, unknown> : {};
+    const replacementConsequence = typeof input.newConsequence === "string" ? input.newConsequence.trim() : "";
+    const editableInput = { ...input };
+    delete editableInput.newConsequence;
+    const parsed = parseInput(editableInput, context.timezone);
     if ("error" in parsed) return parsed;
-    await updateCommitment(context.supabase, context.userId, id, parsed.data);
+    await updateCommitment(context.supabase, context.userId, id, {
+      ...parsed.data,
+      ...(replacementConsequence ? { consequence: replacementConsequence } : {}),
+    });
     revalidatePath("/app");
     revalidatePath("/app/commitments");
     return {};

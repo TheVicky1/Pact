@@ -27,6 +27,11 @@ export function formatDeadline(deadline: string | Date, timezone: string) {
   return new Intl.DateTimeFormat("en-IN", { timeZone: timezone, weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(deadline));
 }
 
+export function formatDeadlineInput(deadline: string | Date, timezone: string) {
+  const value = parts(new Date(deadline), timezone);
+  return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
+}
+
 export function isDeadlinePassed(deadline: string | Date, now = new Date()) {
   return new Date(deadline).getTime() < now.getTime();
 }

@@ -9,6 +9,10 @@ type StoredCommitmentInput = Omit<CommitmentInput, "deadline"> & {
   deadlineAt: string;
 };
 
+type StoredCommitmentUpdate = Omit<StoredCommitmentInput, "consequence"> & {
+  consequence?: string | null;
+};
+
 const commitmentColumns = "id,user_id,title,description,deadline_at,priority,status,completed_at,consequence,created_at,updated_at";
 
 export class CommitmentAccessError extends Error {}
@@ -60,7 +64,7 @@ export async function createCommitment(supabase: SupabaseClient, userId: string,
   return toCommitmentView(commitment);
 }
 
-export async function updateCommitment(supabase: SupabaseClient, userId: string, id: string, input: StoredCommitmentInput): Promise<CommitmentView> {
+export async function updateCommitment(supabase: SupabaseClient, userId: string, id: string, input: StoredCommitmentUpdate): Promise<CommitmentView> {
   const current = await getCommitment(supabase, userId, id);
   if (!canEditCommitment(current)) throw new CommitmentStateError("Only active commitments can be edited.");
   const { data, error } = await supabase
@@ -70,7 +74,7 @@ export async function updateCommitment(supabase: SupabaseClient, userId: string,
       description: input.description,
       priority: input.priority,
       deadline_at: input.deadlineAt,
-      consequence: input.consequence,
+      ...(input.consequence !== undefined ? { consequence: input.consequence } : {}),
     })
     .eq("id", id)
     .eq("user_id", userId)
